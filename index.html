@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bahram Chat</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #111;
+            color: white;
+            margin: 0;
+            padding: 10px;
+        }
+
+        #loginBox {
+            margin-bottom: 10px;
+        }
+
+        #chatBox {
+            display: none;
+        }
+
+        #chat {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #333;
+            padding: 10px;
+            background: #1b1b1b;
+        }
+
+        .msg {
+            padding: 10px;
+            margin: 5px;
+            border-radius: 15px;
+            max-width: 60%;
+        }
+
+        .me {
+            background: #2ecc71;
+            margin-left: auto;
+        }
+
+        .other {
+            background: #3498db;
+            margin-right: auto;
+        }
+
+        input {
+            width: 70%;
+            padding: 10px;
+        }
+
+        button {
+            padding: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>💬 Bahram Messenger</h2>
+
+<!-- 🔐 لاگین -->
+<div id="loginBox">
+    <input id="phone" placeholder="Enter phone">
+    <button onclick="login()">Login</button>
+</div>
+
+<!-- 💬 چت -->
+<div id="chatBox">
+
+    <div id="chat"></div>
+
+    <input id="msg" placeholder="message">
+    <button onclick="send()">Send</button>
+
+</div>
+
+<script>
+const server = window.location.origin;
+
+let user_id = null;
+
+/* 🔐 لاگین */
+async function login() {
+    let phone = document.getElementById("phone").value;
+
+    if (!phone) return;
+
+    let res = await fetch(server + "/login", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ phone })
+    });
+
+    let data = await res.json();
+
+    user_id = data.user_id;
+
+    document.getElementById("loginBox").style.display = "none";
+    document.getElementById("chatBox").style.display = "block";
+}
+
+/* 💬 ارسال پیام */
+function send() {
+    let msg = document.getElementById("msg").value;
+
+    if (!msg || !user_id) return;
+
+    fetch(server + "/send", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            user_id: user_id,
+            msg: msg
+        })
+    });
+
+    document.getElementById("msg").value = "";
+}
+
+/* 📥 گرفتن پیام‌ها */
+async function load() {
+    let res = await fetch(server + "/get");
+    let data = await res.json();
+
+    let chat = document.getElementById("chat");
+    chat.innerHTML = "";
+
+    data.forEach(m => {
+        let div = document.createElement("div");
+        div.classList.add("msg");
+
+        if (m.user_id === user_id) {
+            div.classList.add("me");
+        } else {
+            div.classList.add("other");
+        }
+
+        div.innerText = m.user_id + " : " + m.msg;
+
+        chat.appendChild(div);
+    });
+
+    chat.scrollTop = chat.scrollHeight;
+}
+
+/* 🔁 loop */
+async function loop() {
+    await load();
+    setTimeout(loop, 1000);
+}
+
+loop();
+</script>
+
+</body>
+</html>
